@@ -110,8 +110,8 @@ var NM={C:0,'C#':1,D:2,'D#':3,E:4,F:5,'F#':6,G:7,'G#':8,A:9,'A#':10,B:11};
 var BASE=[{n:'Do4',f:261.6},{n:'Re4',f:293.7},{n:'Mi4',f:329.6},{n:'Sol4',f:392.0}];
 
 function saveConfig(){
-  K=document.getElementById('apiKey').value.trim();
-  P=document.getElementById('pid').value.trim();
+  K='ei_4df43c4ce6b53f2bc3096eb695316edf18a871d6c650c6a8';
+  P='968923';
   if(!K||!P){alert('Remplis les deux champs.');return;}
   localStorage.setItem('ei_k',K);localStorage.setItem('ei_p',P);
   document.getElementById('cfg').classList.add('hidden');
