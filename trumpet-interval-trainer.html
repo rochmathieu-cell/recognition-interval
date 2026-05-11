@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Interval Trainer</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0f0f1a;--card:#1a1a2e;--card2:#16213e;--accent:#e94560;--accent2:#0f3460;--green:#4ecca3;--yellow:#f5a623;--text:#eaeaea;--muted:#8888aa;--r:16px}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:16px}
+h1{font-size:1.4rem;font-weight:700;margin:12px 0 4px;color:var(--green)}
+.sub{font-size:.8rem;color:var(--muted);margin-bottom:20px}
+.panel,.app{background:var(--card);border-radius:var(--r);padding:20px;width:100%;max-width:420px;margin-bottom:16px}
+.app{display:flex;flex-direction:column;align-items:center;gap:16px}
+.slbl{font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px}
+.ig{margin-bottom:12px}
+.ig label{font-size:.8rem;color:var(--muted);display:block;margin-bottom:4px}
+.ig input{width:100%;background:var(--bg);border:1px solid #333;border-radius:8px;padding:10px 12px;color:var(--text);font-size:.85rem;outline:none}
+.ig input:focus{border-color:var(--green)}
+.bsave{width:100%;background:var(--accent2);color:var(--green);border:1px solid var(--green);border-radius:8px;padding:10px;font-size:.85rem;font-weight:600;cursor:pointer}
+.scores{display:flex;gap:10px;width:100%}
+.sb{background:var(--card2);border-radius:12px;padding:10px;text-align:center;flex:1}
+.sb .v{font-size:1.5rem;font-weight:700;color:var(--green)}
+.sb .l{font-size:.65rem;color:var(--muted);text-transform:uppercase}
+.ivd{background:var(--card2);border-radius:var(--r);padding:20px;width:100%;text-align:center;min-height:110px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;position:relative}
+.ivname{font-size:1.8rem;font-weight:800}
+.ivsub{font-size:.8rem;color:var(--muted)}
+.ivnotes{font-size:1rem;color:var(--yellow);font-weight:600}
+.hbadge{position:absolute;top:8px;right:10px;font-size:.65rem;background:var(--accent2);color:var(--green);border-radius:20px;padding:2px 7px}
+.vizbox{width:100%;background:var(--card2);border-radius:12px;padding:10px}
+canvas{width:100%;height:52px;border-radius:6px;display:block}
+.detrow{display:flex;gap:10px;width:100%;align-items:center}
+.nbox{flex:1;background:var(--card2);border-radius:12px;padding:12px;text-align:center;border:2px solid transparent;transition:border-color .3s}
+.nbox.wait{border-color:var(--yellow)}
+.nbox.active{border-color:var(--green)}
+.nbox .nl{font-size:.65rem;color:var(--muted);margin-bottom:4px}
+.nbox .nv{font-size:1.4rem;font-weight:700;color:var(--green);min-height:32px}
+.nbox .nc{font-size:.65rem;color:var(--muted)}
+.arr{color:var(--muted);font-size:1.2rem}
+.haprow{display:flex;gap:5px;align-items:center;font-size:.72rem;color:var(--muted)}
+.hd{width:8px;height:8px;border-radius:50%;background:#333;transition:all .15s}
+.hd.pulse{background:var(--yellow);transform:scale(1.5)}
+.pdots{display:flex;gap:5px;flex-wrap:wrap;justify-content:center;min-height:14px}
+.pd{width:10px;height:10px;border-radius:50%;background:#333}
+.pd.ok{background:var(--green)}
+.pd.ko{background:var(--accent)}
+.fb{width:100%;border-radius:12px;padding:14px;text-align:center;font-weight:700;font-size:1rem;display:none;animation:pop .3s ease}
+.fb.ok{background:rgba(78,204,163,.15);border:1px solid var(--green);color:var(--green);display:block}
+.fb.ko{background:rgba(233,69,96,.15);border:1px solid var(--accent);color:var(--accent);display:block}
+@keyframes pop{from{transform:scale(.9);opacity:0}to{transform:scale(1);opacity:1}}
+.st{font-size:.78rem;color:var(--muted);text-align:center;min-height:18px}
+.st.rec{color:var(--accent)}
+.st.det{color:var(--yellow)}
+.st.ok{color:var(--green)}
+.bp{width:100%;background:var(--accent);color:#fff;border:none;border-radius:12px;padding:15px;font-size:1rem;font-weight:700;cursor:pointer}
+.bp:disabled{background:#333;color:var(--muted);cursor:not-allowed}
+.bs{width:100%;background:transparent;color:var(--muted);border:1px solid #333;border-radius:12px;padding:10px;font-size:.82rem;cursor:pointer}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+<h1>🎺 Interval Trainer</h1>
+<p class="sub">Entrainement auditif · Trompette</p>
+
+<div class="panel" id="cfg">
+  <div class="slbl">Configuration Edge Impulse</div>
+  <div class="ig"><label>Cle API (ei_...)</label><input type="password" id="apiKey" placeholder="ei_xxxxxxxxxxxxxxxx"></div>
+  <div class="ig"><label>Project ID</label><input type="text" id="pid" placeholder="123456"></div>
+  <button class="bsave" onclick="saveConfig()">Enregistrer et demarrer</button>
+</div>
+
+<div class="app hidden" id="app">
+  <div class="scores">
+    <div class="sb"><div class="v" id="sc">0</div><div class="l">Corrects</div></div>
+    <div class="sb"><div class="v" id="st2">0</div><div class="l">Total</div></div>
+    <div class="sb"><div class="v" id="sp">--</div><div class="l">Score</div></div>
+  </div>
+  <div class="ivd" id="ivd">
+    <div class="hbadge">haptique</div>
+    <div style="color:var(--muted);font-size:.9rem">Appuie sur Demarrer</div>
+  </div>
+  <div class="vizbox"><canvas id="cv"></canvas></div>
+  <div class="detrow">
+    <div class="nbox" id="nb1"><div class="nl">Note 1</div><div class="nv" id="nv1">--</div><div class="nc" id="nc1"></div></div>
+    <div class="arr">to</div>
+    <div class="nbox" id="nb2"><div class="nl">Note 2</div><div class="nv" id="nv2">--</div><div class="nc" id="nc2"></div></div>
+  </div>
+  <div class="haprow">
+    <span>Haptique :</span>
+    <div class="hd" id="hd0"></div><div class="hd" id="hd1"></div><div class="hd" id="hd2"></div><div class="hd" id="hd3"></div><div class="hd" id="hd4"></div>
+  </div>
+  <div class="pdots" id="pdots"></div>
+  <div class="fb hidden" id="fb"></div>
+  <div class="st" id="status">Pret</div>
+  <button class="bp" id="btn" onclick="go()">Demarrer l exercice</button>
+  <button class="bs" onclick="showCfg()">Parametres</button>
+</div>
+
+<script>
+var K='',P='',actx,analyser,mic,isRec=false,cur=null,hist=[],ok=0,tot=0;
+var IVS=[
+  {name:'Unisson',    st:0,  hap:[200]},
+  {name:'Tierce Maj', st:4,  hap:[100,80,100]},
+  {name:'Quarte',     st:5,  hap:[150,80,150,80,100]},
+  {name:'Quinte',     st:7,  hap:[200,80,200]},
+  {name:'Octave',     st:12, hap:[300,80,300]},
+];
+var NS=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+var NM={C:0,'C#':1,D:2,'D#':3,E:4,F:5,'F#':6,G:7,'G#':8,A:9,'A#':10,B:11};
+var BASE=[{n:'Do4',f:261.6},{n:'Re4',f:293.7},{n:'Mi4',f:329.6},{n:'Sol4',f:392.0}];
+
+function saveConfig(){
+  K=document.getElementById('apiKey').value.trim();
+  P=document.getElementById('pid').value.trim();
+  if(!K||!P){alert('Remplis les deux champs.');return;}
+  localStorage.setItem('ei_k',K);localStorage.setItem('ei_p',P);
+  document.getElementById('cfg').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
+  initAudio();
+}
+function showCfg(){
+  document.getElementById('cfg').classList.remove('hidden');
+  document.getElementById('app').classList.add('hidden');
+}
+window.addEventListener('load',function(){
+  var k=localStorage.getItem('ei_k'),p=localStorage.getItem('ei_p');
+  if(k&&p){
+    document.getElementById('apiKey').value=k;
+    document.getElementById('pid').value=p;
+    K=k;P=p;
+    document.getElementById('cfg').classList.add('hidden');
+    document.getElementById('app').classList.remove('hidden');
+    initAudio();
+  }
+});
+function initAudio(){
+  navigator.mediaDevices.getUserMedia({audio:{sampleRate:16000,channelCount:1}}).then(function(stream){
+    actx=new(window.AudioContext||window.webkitAudioContext)({sampleRate:16000});
+    mic=stream;
+    var src=actx.createMediaStreamSource(mic);
+    analyser=actx.createAnalyser();analyser.fftSize=256;
+    src.connect(analyser);
+    setSt('Micro actif','ok');drawWave();
+  }).catch(function(e){setSt('Micro : '+e.message,'');});
+}
+function drawWave(){
+  var cv=document.getElementById('cv'),ctx=cv.getContext('2d');
+  (function draw(){
+    requestAnimationFrame(draw);
+    if(!analyser)return;
+    cv.width=cv.offsetWidth*devicePixelRatio;cv.height=52*devicePixelRatio;
+    var b=new Uint8Array(analyser.frequencyBinCount);
+    analyser.getByteTimeDomainData(b);
+    ctx.fillStyle='#0f0f1a';ctx.fillRect(0,0,cv.width,cv.height);
+    ctx.strokeStyle=isRec?'#e94560':'#4ecca3';ctx.lineWidth=2;ctx.beginPath();
+    for(var i=0;i<b.length;i++){var y=(b[i]/128)*cv.height/2;i===0?ctx.moveTo(0,y):ctx.lineTo(i*cv.width/b.length,y);}
+    ctx.stroke();
+  })();
+}
+function playNote(f,d){
+  d=d||0.65;
+  return new Promise(function(r){
+    var o=actx.createOscillator(),g=actx.createGain();
+    o.connect(g);g.connect(actx.destination);
+    o.type='sawtooth';o.frequency.value=f;
+    g.gain.setValueAtTime(0,actx.currentTime);
+    g.gain.linearRampToValueAtTime(.28,actx.currentTime+.05);
+    g.gain.exponentialRampToValueAtTime(.001,actx.currentTime+d);
+    o.start();o.stop(actx.currentTime+d);
+    setTimeout(r,d*1000+80);
+  });
+}
+function haptic(pat){
+  if(navigator.vibrate)navigator.vibrate(pat);
+  var t=0;
+  pat.forEach(function(ms,i){
+    if(i%2===0){
+      (function(idx,dur){
+        setTimeout(function(){
+          var d=document.getElementById('hd'+Math.min(idx,4));
+          if(d){d.classList.add('pulse');setTimeout(function(){d.classList.remove('pulse');},dur);}
+        },t);
+      })(i/2,ms);
+    }
+    t+=ms;
+  });
+}
+function go(){
+  if(!K||!P){showCfg();return;}
+  var btn=document.getElementById('btn');
+  btn.disabled=true;
+  document.getElementById('fb').className='fb hidden';
+  resetBoxes();
+  cur=IVS[Math.floor(Math.random()*IVS.length)];
+  var base=BASE[Math.floor(Math.random()*BASE.length)];
+  var rootIdx=NM[base.n.replace(/\d/,'')]||0;
+  var targetNote=NS[(rootIdx+cur.st)%12];
+  var oct=base.n.match(/\d/)[0];
+  document.getElementById('ivd').innerHTML=
+    '<div class="hbadge">haptique</div>'+
+    '<div class="ivname">'+cur.name+'</div>'+
+    '<div class="ivsub">'+cur.st+' demi-ton'+(cur.st>1?'s':'')+'</div>'+
+    '<div class="ivnotes">'+base.n+' vers '+targetNote+oct+'</div>';
+  setSt('Ecoute...','det');
+  playNote(base.f).then(function(){
+    return new Promise(function(r){setTimeout(r,180);});
+  }).then(function(){
+    return playNote(base.f*Math.pow(2,cur.st/12));
+  }).then(function(){
+    haptic(cur.hap);
+    return new Promise(function(r){setTimeout(r,500);});
+  }).then(function(){
+    setSt('Joue la NOTE 1...','rec');
+    document.getElementById('nb1').classList.add('wait');
+    isRec=true;
+    return rec(1600);
+  }).then(function(a1){
+    isRec=false;
+    document.getElementById('nb1').classList.remove('wait');
+    setSt('Analyse note 1...','det');
+    return classify(a1);
+  }).then(function(r1){
+    if(r1){
+      document.getElementById('nv1').textContent=r1.l;
+      document.getElementById('nc1').textContent=Math.round(r1.s*100)+'%';
+      document.getElementById('nb1').classList.add('active');
+    }
+    window._r1=r1;
+    return new Promise(function(r){setTimeout(r,350);});
+  }).then(function(){
+    setSt('Joue la NOTE 2...','rec');
+    document.getElementById('nb2').classList.add('wait');
+    isRec=true;
+    return rec(1600);
+  }).then(function(a2){
+    isRec=false;
+    document.getElementById('nb2').classList.remove('wait');
+    setSt('Analyse note 2...','det');
+    return classify(a2);
+  }).then(function(r2){
+    if(r2){
+      document.getElementById('nv2').textContent=r2.l;
+      document.getElementById('nc2').textContent=Math.round(r2.s*100)+'%';
+      document.getElementById('nb2').classList.add('active');
+    }
+    return new Promise(function(r){setTimeout(r,300);});
+  }).then(function(){
+    evaluate(window._r1,arguments[0]);
+    btn.disabled=false;
+    btn.textContent='Prochain intervalle';
+  });
+}
+function rec(ms){
+  return new Promise(function(r){
+    var ch=[],rc=new MediaRecorder(mic);
+    rc.ondataavailable=function(e){ch.push(e.data);};
+    rc.onstop=function(){r(new Blob(ch,{type:'audio/wav'}));};
+    rc.start();setTimeout(function(){rc.stop();},ms);
+  });
+}
+function classify(blob){
+  var fd=new FormData();fd.append('data',blob,'audio.wav');
+  return fetch('https://studio.edgeimpulse.com/v1/api/'+P+'/classify',{
+    method:'POST',headers:{'x-api-key':K},body:fd
+  }).then(function(res){
+    if(!res.ok){setSt('API erreur '+res.status,'');return null;}
+    return res.json();
+  }).then(function(j){
+    if(j&&j.result&&j.result.classification){
+      var b=Object.entries(j.result.classification).sort(function(a,b){return b[1]-a[1];})[0];
+      return{l:b[0],s:b[1]};
+    }
+    return null;
+  }).catch(function(e){setSt(e.message,'');return null;});
+}
+function evaluate(r1,r2){
+  if(!r1||!r2){setSt('Notes non detectees, reessaie','');return;}
+  var m1=NM[r1.l]||0,m2=NM[r2.l]||0;
+  var diff=((m2-m1)+12)%12;
+  var found=null;
+  IVS.forEach(function(i){if(i.st%12===diff)found=i;});
+  var isOk=found&&found.name===cur.name;
+  tot++;if(isOk)ok++;hist.push(isOk);
+  var fb=document.getElementById('fb');
+  fb.textContent=isOk?'Correct ! '+cur.name:'Joue : '+(found?found.name:diff+' demi-tons')+' -- Attendu : '+cur.name;
+  fb.className='fb '+(isOk?'ok':'ko');
+  if(navigator.vibrate)navigator.vibrate(isOk?[80,50,80,50,80]:[400]);
+  document.getElementById('sc').textContent=ok;
+  document.getElementById('st2').textContent=tot;
+  document.getElementById('sp').textContent=Math.round(ok/tot*100)+'%';
+  var row=document.getElementById('pdots');row.innerHTML='';
+  hist.slice(-20).forEach(function(v){var d=document.createElement('div');d.className='pd '+(v?'ok':'ko');row.appendChild(d);});
+  setSt('','');
+}
+function resetBoxes(){
+  ['nv1','nv2'].forEach(function(id){document.getElementById(id).textContent='--';});
+  ['nc1','nc2'].forEach(function(id){document.getElementById(id).textContent='';});
+  ['nb1','nb2'].forEach(function(id){document.getElementById(id).className='nbox';});
+}
+function setSt(m,t){var e=document.getElementById('status');e.textContent=m;e.className='st'+(t?' '+t:'');}
+</script>
+</body>
+</html>
